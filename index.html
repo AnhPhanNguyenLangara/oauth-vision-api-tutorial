@@ -46,14 +46,12 @@
       // Access camera
       var video = document.querySelector("#videoElement");
       if (navigator.mediaDevices.getUserMedia) {
-        const isMobile = /iPhone|Android/i.test(navigator.userAgent);
-        console.log("isMobile: ", isMobile);
 
         navigator.mediaDevices
           .getUserMedia({
             video: {
-              width: { ideal: isMobile ? 1080 : 1920 },
-              height: { ideal: isMobile ? 1920 : 1080 },
+              width: 1920,
+              height: 1080,
             },
           })
           .then(function (stream) {
