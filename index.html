@@ -2,32 +2,34 @@
   <head>
     <style>
       #results {
-	  position: fixed;
-	  top: 50px;
-	  left: 10px;
-	  color: white;
+        position: fixed;
+        top: 50px;
+        left: 10px;
+        color: white;
       }
 
       #results span {
-	  margin: 5px 5px;
+        margin: 5px 5px;
       }
-      
+
       video {
-	  position: fixed;
-	  top: 0;
-	  left: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        max-height: 100vh;
+        max-width: 100vw;
       }
 
       h1 {
-	  position: fixed;
-	  bottom: 0;
-	  left: 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
       }
 
       button {
-	  position: fixed;
-	  top: 0;
-	  left: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
       }
     </style>
   </head>
@@ -35,77 +37,107 @@
     <!-- Basic Cloud Vision (Google) Demo -->
 
     <video autoplay="true" id="videoElement"></video>
-    <button id="vision_button">Analyze</button>
-    <div id='results'></div>
-    
-    <script>
+    <button id="vision_button">Check for Smile</button>
 
-      // Access camera 
-      var video = document.querySelector("#videoElement");      
-      if (navigator.mediaDevices.getUserMedia) {       
-	  navigator.mediaDevices.getUserMedia({video: true})
-	      .then(function(stream) {
-		  video.srcObject = stream;
-	      })
-	      .catch(function(err) {
-		  console.log("Something went wrong!");
-	      });
+    <script>
+      // Access camera
+      var video = document.querySelector("#videoElement");
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({
+            video: {
+              width: { ideal: 4096 },
+              height: { ideal: 4096 },
+            },
+          })
+          .then(function (stream) {
+            video.srcObject = stream;
+          })
+          .catch(function (err) {
+            console.log("Something went wrong!");
+          });
       }
 
       // We only get to work when the vision button is clicked
-      document.querySelector("#vision_button").addEventListener('click', evt => {
-	  // extract image as base64, scale it down to reduce data transfer speed	  
-	  var scale = 0.25;
-	  var canvas = document.createElement("canvas");
+      document
+        .querySelector("#vision_button")
+        .addEventListener("click", (evt) => {
+          // extract image as base64
+          // using full res image for emotion detection since lowres doesn't give good results
+          var scale = 1;
+          var canvas = document.createElement("canvas");
           canvas.width = video.videoWidth * scale;
           canvas.height = video.videoHeight * scale;
-          canvas.getContext('2d')
-              .drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas
+            .getContext("2d")
+            .drawImage(video, 0, 0, canvas.width, canvas.height);
 
-	  // dataUrl contains base64 version of image
+          console.log(canvas.width, canvas.height);
+          // dataUrl contains base64 version of image
           var dataUrl = canvas.toDataURL();
 
-	  // Send image to google to analyze
-	  // Documentation of the annotate feature: https://cloud.google.com/vision/docs/reference/rest/v1/images/annotate 
-	  fetch('https://vision.googleapis.com/v1/images:annotate?key=AIzaSyBc7VMHDMfnsOcIZmD-YAsB9xOe5tefURI', {
-	      method: 'POST',
-	      headers: {
-		  'Content-Type': 'application/json'
-	      },
-	      body: JSON.stringify({
-		  requests: [
-		      {
-			  features: {
-			      type: 'LABEL_DETECTION'
-			  },
-			  image: {
-			      // have to extract only the image data from dataURL
-			      content: dataUrl.substring('data:image/png;base64,'.length)
-			  }
-		      }
-		  ]
-	      })
-	  }).then( resp => {
-	      return resp.json();
-	  }).then( json => {
-	      // Simply output the response
-	      console.log(json);
-	      results.innerHTML = '';
-	      json.responses[0].labelAnnotations.forEach( annotation => {
-		  let description = document.createElement('span');
-		  let score = document.createElement('span');
+          // Send image to google to analyze
+          // Documentation of the annotate feature: https://cloud.google.com/vision/docs/reference/rest/v1/images/annotate
+          fetch(
+            "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyAgJyIylEslitL_Hq26UOy0LM5m71hPPGA",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                requests: [
+                  {
+                    features: {
+                      type: "FACE_DETECTION",
+                    },
+                    image: {
+                      // have to extract only the image data from dataURL
+                      content: dataUrl.substring(
+                        "data:image/png;base64,".length
+                      ),
+                    },
+                  },
+                ],
+              }),
+            }
+          )
+            .then((resp) => {
+              return resp.json();
+            })
+            .then((json) => {
+              // Simply output the response
+              console.log(json);
+              const smile = json.responses[0].faceAnnotations[0].joyLikelihood;
+              console.log(smile);
+              switch (smile) {
+                case "VERY_LIKELY":
+                  alert("Gorgeous smile! 😄");
+                  break;
+                case "LIKELY":
+                  alert("Nice smile! 🙂");
+                  break;
+                case "POSSIBLE":
+                  alert("Hard to tell if you are smiling or not! 😐");
+                  break;
+                default:
+                  alert("You should smile more! 😕");
+              }
 
-		  let div = document.createElement('div');
-		  description.innerText = annotation.description;
-		  score.innerText = annotation.score;
+              //   json.responses[0].labelAnnotations.forEach((annotation) => {
+              //     let description = document.createElement("span");
+              //     let score = document.createElement("span");
 
-		  div.append(description,score);
+              //     let div = document.createElement("div");
+              //     description.innerText = annotation.description;
+              //     score.innerText = annotation.score;
 
-		  results.append(div);
-	      });
-	  });
-      });
-      
+              //     div.append(description, score);
+
+              //     results.append(div);
+              //   });
+            });
+        });
     </script>
   </body>
 </html>
