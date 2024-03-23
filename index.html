@@ -13,9 +13,9 @@
       }
 
       video {
-        position: fixed;
+        /* position: fixed;
         top: 0;
-        left: 0;
+        left: 0; */
         max-height: 100vh;
         max-width: 100vw;
         width: 100%;
@@ -46,11 +46,14 @@
       // Access camera
       var video = document.querySelector("#videoElement");
       if (navigator.mediaDevices.getUserMedia) {
+        const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+        console.log("isMobile: ", isMobile);
+
         navigator.mediaDevices
           .getUserMedia({
             video: {
-              width: { ideal: 4096 },
-              height: { ideal: 4096 },
+              width: { ideal: isMobile ? 1080 : 1920 },
+              height: { ideal: isMobile ? 1920 : 1080 },
             },
           })
           .then(function (stream) {
